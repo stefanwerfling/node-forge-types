@@ -548,10 +548,10 @@ if (forge.util.fillString("1", 5) !== "11111") throw Error("forge.util.fillStrin
         verify: (c, verified, depth, certs) => {
             console.log(
                 "TLS Client verifying certificate w/CN: \""
-                    + certs[0].subject.getField("CN").value
-                    + "\", verified: "
-                    + verified
-                    + "...",
+                + certs[0].subject.getField("CN").value
+                + "\", verified: "
+                + verified
+                + "...",
             );
             return verified;
         },
@@ -615,10 +615,10 @@ if (forge.util.fillString("1", 5) !== "11111") throw Error("forge.util.fillStrin
         verify: (c, verified, depth, certs) => {
             console.log(
                 "Server verifying certificate w/CN: \""
-                    + certs[0].subject.getField("CN").value
-                    + "\", verified: "
-                    + verified
-                    + "...",
+                + certs[0].subject.getField("CN").value
+                + "\", verified: "
+                + verified
+                + "...",
             );
             return verified;
         },
@@ -924,4 +924,75 @@ if (forge.util.fillString("1", 5) !== "11111") throw Error("forge.util.fillStrin
         const msg = "0102030405060708090a0b0c0d0e0f00";
         keypair.privateKey.sign(forge.util.hexToBytes(msg), "NONE");
     });
+}
+
+{
+    // from https://github.com/digitalbazaar/forge#pkcs10
+    // generate a key pair
+    var keys = forge.pki.rsa.generateKeyPair(2048);
+
+    // create a certification request (CSR)
+    csr = forge.pki.createCertificationRequest();
+    csr.publicKey = keys.publicKey;
+    csr.setSubject([{
+        name: 'commonName',
+        value: 'example.org'
+    }, {
+        name: 'countryName',
+        value: 'US'
+    }, {
+        shortName: 'ST',
+        value: 'Virginia'
+    }, {
+        name: 'localityName',
+        value: 'Blacksburg'
+    }, {
+        name: 'organizationName',
+        value: 'Test'
+    }, {
+        shortName: 'OU',
+        value: 'Test'
+    }]);
+    // set (optional) attributes
+    csr.setAttributes([{
+        name: 'challengePassword',
+        value: 'password'
+    }, {
+        name: 'unstructuredName',
+        value: 'My Company, Inc.'
+    }, {
+        name: 'extensionRequest',
+        extensions: [{
+            name: 'subjectAltName',
+            altNames: [{
+                // 2 is DNS type
+                type: 2,
+                value: 'test.domain.com'
+            }, {
+                type: 2,
+                value: 'other.domain.com',
+            }, {
+                type: 2,
+                value: 'www.domain.net'
+            }]
+        }]
+    }]);
+
+    // sign certification request
+    csr.sign(keys.privateKey);
+
+    // verify certification request
+    var verified = csr.verify();
+
+    // convert certification request to PEM-format
+    var pem = forge.pki.certificationRequestToPem(csr);
+
+    // convert a Forge certification request from PEM-format
+    csr = forge.pki.certificationRequestFromPem(pem);
+
+    // get an attribute
+    csr.getAttribute({name: 'challengePassword'});
+
+    // get extensions array
+    csr.getAttribute({name: 'extensionRequest'}).extensions;
 }
